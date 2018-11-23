@@ -5,11 +5,14 @@ library(dplyr)
 bcl <- read.csv("bcl-data.csv", stringsAsFactors = FALSE)
 
 ui <- fluidPage(
+  # add an image
+  img(src = "liquor.jpeg"), 
   titlePanel("BC Liquor Store prices"),
   sidebarLayout(
     sidebarPanel(
       sliderInput("priceInput", "Price", 0, 100, c(25, 40), pre = "$"),
-      radioButtons("typeInput", "Product type",
+      # mutiple selection with checkbox
+      checkboxGroupInput("typeInput", "Product type",
                   choices = c("BEER", "REFRESHMENT", "SPIRITS", "WINE"),
                   selected = "WINE"),
       uiOutput("countryOutput")
@@ -17,7 +20,10 @@ ui <- fluidPage(
     mainPanel(
       plotOutput("coolplot"),
       br(), br(),
-      tableOutput("results")
+      # download button for downloading the filtered data
+      downloadButton('downloadData', 'Download'),
+      # DT package to make the table interactive
+      DT::dataTableOutput  ("results")
     )
   )
 )
@@ -49,10 +55,23 @@ server <- function(input, output) {
     ggplot(filtered(), aes(Alcohol_Content)) +
       geom_histogram()
   })
-
-  output$results <- renderTable({
+  # render a interactive table with "DT::renderDataTable"
+  output$results <- DT::renderDataTable({
     filtered()
   })
+  # download the filtered data and save it as .csv file
+  output$downloadData <- downloadHandler(
+      filename = function() {
+        # specifiy the file name
+        paste('data-', Sys.Date(), '.csv', sep='')
+      },
+      content = function(con) {
+        # write the .csv file with the filtered data
+        write.csv(filtered(), con)
+      }
+    )
 }
 
 shinyApp(ui = ui, server = server)
+
+
